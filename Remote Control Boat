@@ -1,0 +1,130 @@
+//蓝牙部分define
+#define blueToothSerial Serial3
+#define RxD         7
+#define TxD         6
+#define PINLED1      9
+#define PINLED2      10
+#define LEDON()     digitalWrite(PINLED1, HIGH)
+#define LEDOFF()    digitalWrite(PINLED1, LOW)
+#define DEBUG_ENABLED  1
+
+//CONTROL部分define
+int x = 255;
+int y = 255;
+int positionx = 0;
+int positiony = 0;
+int speed = 0;
+//char recvChar;
+
+
+void setupBlueToothConnection()
+{
+    blueToothSerial.begin(38400);                           // Set BluetoothBee BaudRate to default baud rate 38400
+    blueToothSerial.print("\r\n+STWMOD=0\r\n");             // set the bluetooth work in slave mode
+    blueToothSerial.print("\r\n+STNA=NEIL\r\n");    // set the bluetooth name as "SeeedBTSlave"
+    blueToothSerial.print("\r\n+STOAUT=1\r\n");             // Permit Paired device to connect me
+    blueToothSerial.print("\r\n+STPIN =0000\r\n"); 
+    blueToothSerial.print("\r\n+STAUTO=0\r\n");   // Auto-connection should be forbidden here
+    delay(2000);                                            // This delay is required.
+    blueToothSerial.print("\r\n+INQ=1\r\n");                // make the slave bluetooth inquirable
+    Serial.println("The slave bluetooth is inquirable!");
+    delay(2000);                                            // This delay is required.
+    blueToothSerial.flush();
+}
+
+
+
+//总setup
+int in;
+void setup()
+{
+ Serial.begin(9600);
+    pinMode(RxD, INPUT);
+    pinMode(TxD, OUTPUT);
+    pinMode(PINLED1, OUTPUT);
+    LEDOFF();
+    
+    setupBlueToothConnection();
+
+    pinMode(LED_BUILTIN, OUTPUT);
+    pinMode(4, OUTPUT);      //右马达控制
+    pinMode(5, OUTPUT);      //左马达控制
+    //analogWrite(5,255);
+    //analogWrite(4,255);
+    
+}
+
+void controller (int z)
+{
+    Serial.println(z);
+     if(z == 2)
+     {
+        positionx = 0;
+        positiony = 0;
+        if(speed>100)
+        {
+          speed = speed -127;
+        }
+     }
+     if(z == 6)
+     {
+        positiony = 1;
+     }
+     if(z == 5)
+     {
+        positionx = 0;
+        positiony = 0;
+     }
+     if(z == 4)
+     {
+        positionx = 1;
+     }
+     if(z == 8)
+     {
+        positionx = 0;
+        positiony = 0;
+        if(speed<129)
+        {
+          speed = speed + 127;
+        }
+     }
+     if(z == 0)
+     {
+        positionx = 0;
+        positiony = 0;
+        speed=255;
+     }
+     if(positiony==0)
+     {
+      y=speed;
+     }
+     else{y=255;}
+     if(positionx==0)
+     {
+      x=speed;
+     }
+     else{x=255;}
+     Serial.println(y);
+     Serial.println(x);    
+}
+
+
+//总loop
+
+
+void loop()
+{
+  char recvChar;
+  int q;
+
+            recvChar = blueToothSerial.read();
+            //Serial.print(recvChar);
+            q = (int)recvChar;
+            q = q-'0';
+            //Serial.print(q); 
+            //q = 4;
+            controller(q);
+            analogWrite(5,y);   
+            analogWrite(4,x);
+            delay(5000);    
+    }
